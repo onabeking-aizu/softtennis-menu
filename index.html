@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ソフトテニス練習メニュー提案＆記録アプリ</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        /* カスタムスクロールバー */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1; 
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888; 
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555; 
+        }
+        
+        /* Markdownのスタイル調整 */
+        .markdown-body h3 { font-size: 1.25rem; font-weight: bold; margin-top: 1rem; margin-bottom: 0.5rem; color: #166534; }
+        .markdown-body h4 { font-size: 1.1rem; font-weight: bold; margin-top: 0.75rem; margin-bottom: 0.5rem; }
+        .markdown-body p { margin-bottom: 0.75rem; line-height: 1.6; }
+        .markdown-body ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+        .markdown-body ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 0.75rem; }
+        .markdown-body li { margin-bottom: 0.25rem; }
+        .markdown-body strong { font-weight: bold; color: #15803d; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col">
+
+    <!-- ヘッダー -->
+    <header class="bg-green-600 text-white p-4 shadow-md">
+        <div class="max-w-4xl mx-auto flex items-center justify-between">
+            <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2">
+                <i class="ph ph-tennis-ball text-3xl"></i>
+                ジュニアソフトテニスコーチ
+            </h1>
+            <button id="settingsBtn" class="p-2 hover:bg-green-700 rounded-full transition" title="API設定">
+                <i class="ph ph-gear text-2xl"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="flex-grow max-w-4xl w-full mx-auto p-4 md:p-6">
+        
+        <!-- APIキー設定モーダル (初期非表示) -->
+        <div id="apiSettingsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+            <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-bold text-gray-700">APIキー設定</h2>
+                    <button id="closeSettingsBtn" class="text-gray-500 hover:text-gray-800">
+                        <i class="ph ph-x text-xl"></i>
+                    </button>
+                </div>
+                <p class="text-sm text-gray-600 mb-4">
+                    練習メニューを自動生成するには、Google AI StudioのAPIキー(Gemini API)が必要です。キーはブラウザにのみ保存されます。<br>
+                    <span class="text-green-600 font-bold">※プレビュー環境では入力不要で動作します。</span>
+                </p>
+                <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="w-full border border-gray-300 rounded-lg p-3 mb-4 focus:ring-2 focus:ring-green-500 focus:outline-none">
+                <button id="saveApiKeyBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition">
+                    保存する
+                </button>
+            </div>
+        </div>
+
+        <!-- カスタムアラートモーダル -->
+        <div id="customAlertModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+            <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm text-center">
+                <p id="customAlertText" class="text-gray-700 mb-6 whitespace-pre-wrap"></p>
+                <button id="customAlertBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-8 rounded-full transition">OK</button>
+            </div>
+        </div>
+
+        <!-- カスタム確認モーダル -->
+        <div id="customConfirmModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
+            <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-sm text-center">
+                <p id="customConfirmText" class="text-gray-700 mb-6 whitespace-pre-wrap"></p>
+                <div class="flex justify-center gap-4">
+                    <button id="customConfirmCancelBtn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-lg transition">キャンセル</button>
+                    <button id="customConfirmOkBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition">削除する</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- タブナビゲーション -->
+        <div class="flex border-b border-gray-300 mb-4 sm:mb-6 sticky top-0 bg-gray-50 z-10 pt-2">
+            <button id="tabSuggest" class="flex-1 py-3.5 sm:py-4 text-center font-bold text-green-700 border-b-2 border-green-600 bg-white rounded-t-lg transition flex justify-center items-center gap-1">
+                <i class="ph ph-magic-wand text-lg"></i> <span class="text-sm sm:text-base">メニュー提案</span>
+            </button>
+            <button id="tabRecord" class="flex-1 py-3.5 sm:py-4 text-center font-bold text-gray-500 border-b-2 border-transparent hover:text-green-600 hover:bg-gray-100 rounded-t-lg transition flex justify-center items-center gap-1">
+                <i class="ph ph-calendar-check text-lg"></i> <span class="text-sm sm:text-base">練習記録</span>
+            </button>
+        </div>
+
+        <!-- パネル: メニュー提案 -->
+        <div id="panelSuggest" class="block">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-6">
+                <h2 class="text-lg font-bold text-gray-700 mb-4 border-l-4 border-green-500 pl-2">条件を入力</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-4">
+                    <!-- 学年 -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">対象学年 <span class="text-xs text-gray-500 font-normal">※複数選択可</span></label>
+                        <div class="flex flex-wrap items-center gap-2 bg-gray-50/50 border border-gray-300 rounded-lg p-3">
+                            <label class="cursor-pointer">
+                                <input type="checkbox" name="grade" value="小学1年生" class="peer sr-only">
+                                <div class="px-3 py-2 rounded-md border border-gray-300 bg-white text-gray-700 text-sm sm:text-base font-medium peer-checked:bg-green-600 peer-checked:text-white peer-checked:border-green-600 transition text-center min-w-[3.5rem] shadow-sm">小1</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="checkbox" name="grade" value="小学2年生" class="peer sr-only">
+                                <div class="px-3 py-2 rounded-md border border-gray-300 bg-white text-gray-700 text-sm sm:text-base font-medium peer-checked:bg-green-600 peer-checked:text-white peer-checked:border-green-600 transition text-center min-w-[3.5rem] shadow-sm">小2</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="checkbox" name="grade" value="小学3年生" class="peer sr-only">
+                                <div class="px-3 py-2 rounded-md border border-gray-300 bg-white text-gray-700 text-sm sm:text-base font-medium peer-checked:bg-green-600 peer-checked:text-white peer-checked:border-green-600 transition text-center min-w-[3.5rem] shadow-sm">小3</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="checkbox" name="grade" value="小学4年生" class="peer sr-only">
+                                <div class="px-3 py-2 rounded-md border border-gray-300 bg-white text-gray-700 text-sm sm:text-base font-medium peer-checked:bg-green-600 peer-checked:text-white peer-checked:border-green-600 transition text-center min-w-[3.5rem] shadow-sm">小4</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="checkbox" name="grade" value="小学5年生" class="peer sr-only" checked>
+                                <div class="px-3 py-2 rounded-md border border-gray-300 bg-white text-gray-700 text-sm sm:text-base font-medium peer-checked:bg-green-600 peer-checked:text-white peer-checked:border-green-600 transition text-center min-w-[3.5rem] shadow-sm">小5</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="checkbox" name="grade" value="小学6年生" class="peer sr-only" checked>
+                                <div class="px-3 py-2 rounded-md border border-gray-300 bg-white text-gray-700 text-sm sm:text-base font-medium peer-checked:bg-green-600 peer-checked:text-white peer-checked:border-green-600 transition text-center min-w-[3.5rem] shadow-sm">小6</div>
+                            </label>
+                            
+                            <div class="w-px h-6 bg-gray-300 mx-1 hidden sm:block"></div>
+                            <div class="w-full h-px bg-gray-200 my-1 sm:hidden"></div>
+                            
+                            <label class="cursor-pointer">
+                                <input type="checkbox" name="grade" value="中学1年生" class="peer sr-only">
+                                <div class="px-3 py-2 rounded-md border border-gray-300 bg-white text-gray-700 text-sm sm:text-base font-medium peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 transition text-center min-w-[3.5rem] shadow-sm">中1</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="checkbox" name="grade" value="中学2年生" class="peer sr-only">
+                                <div class="px-3 py-2 rounded-md border border-gray-300 bg-white text-gray-700 text-sm sm:text-base font-medium peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 transition text-center min-w-[3.5rem] shadow-sm">中2</div>
+                            </label>
+                            <label class="cursor-pointer">
+                                <input type="checkbox" name="grade" value="中学3年生" class="peer sr-only">
+                                <div class="px-3 py-2 rounded-md border border-gray-300 bg-white text-gray-700 text-sm sm:text-base font-medium peer-checked:bg-blue-600 peer-checked:text-white peer-checked:border-blue-600 transition text-center min-w-[3.5rem] shadow-sm">中3</div>
+                            </label>
+                        </div>
+                    </div>
+                    <!-- レベル -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">レベル</label>
+                        <select id="level" class="w-full border border-gray-300 rounded-lg p-3 text-base focus:ring-2 focus:ring-green-500 focus:outline-none bg-white">
+                            <option value="初心者（ラケットの握り方から）">初心者（ラケットの握り方から）</option>
+                            <option value="初級（ラリーが少し続く）" selected>初級（ラリーが少し続く）</option>
+                            <option value="中級（試合ができる）">中級（試合ができる）</option>
+                            <option value="上級（大会上位を目指す）">上級（大会上位を目指す）</option>
+                        </select>
+                    </div>
+                    <!-- 人数 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">参加人数（子供）</label>
+                        <div class="flex items-center">
+                            <input type="number" id="playerCount" value="10" min="1" max="50" class="w-full border border-gray-300 rounded-l-lg p-3 text-base focus:ring-2 focus:ring-green-500 focus:outline-none">
+                            <span class="bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg p-3 text-gray-600 text-base">人</span>
+                        </div>
+                    </div>
+                    <!-- 大人の人数 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">大人の人数（コーチ・保護者）</label>
+                        <div class="flex items-center">
+                            <input type="number" id="adultCount" value="2" min="0" max="20" class="w-full border border-gray-300 rounded-l-lg p-3 text-base focus:ring-2 focus:ring-green-500 focus:outline-none">
+                            <span class="bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg p-3 text-gray-600 text-base">人</span>
+                        </div>
+                    </div>
+                    <!-- 時間 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">練習時間</label>
+                        <div class="flex items-center">
+                            <input type="number" id="duration" value="120" min="10" step="10" class="w-full border border-gray-300 rounded-l-lg p-3 text-base focus:ring-2 focus:ring-green-500 focus:outline-none">
+                            <span class="bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg p-3 text-gray-600 text-base">分</span>
+                        </div>
+                    </div>
+                    <!-- 重点課題カテゴリ -->
+                    <div class="md:col-span-2 mt-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">重点カテゴリ <span class="text-xs text-gray-500 font-normal">※複数選択可・タップした順に優先順位が高くなります</span></label>
+                        <div id="categoryTags" class="flex flex-wrap gap-2 sm:gap-2.5 mb-2">
+                            <!-- JSで動的に生成 -->
+                        </div>
+                    </div>
+                    <!-- 自由記述 -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">具体的なフォーカス（自由記述・任意）</label>
+                        <input type="text" id="focusDetail" placeholder="例: バックハンドの苦手克服、前衛のポジショニングなど" class="w-full border border-gray-300 rounded-lg p-3 text-base focus:ring-2 focus:ring-green-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="mt-8 text-center">
+                    <button id="generateBtn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 px-8 rounded-full shadow-lg transition flex items-center justify-center gap-2 mx-auto w-full md:w-auto text-lg">
+                        <i class="ph ph-sparkle text-2xl"></i> メニューを提案してもらう
+                    </button>
+                </div>
+            </div>
+
+            <!-- ローディング表示 -->
+            <div id="loading" class="hidden text-center py-10">
+                <i class="ph ph-spinner-gap text-4xl text-green-600 animate-spin mx-auto mb-4"></i>
+                <p class="text-gray-600 font-medium">AIがメニューを考案中...</p>
+            </div>
+
+            <!-- 結果表示エリア -->
+            <div id="resultArea" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 p-5 md:p-6 mb-6">
+                <div class="flex justify-between items-center mb-4 border-b pb-2">
+                    <h2 class="text-lg font-bold text-gray-800"><i class="ph ph-clipboard-text text-green-600 mr-2"></i>提案されたメニュー</h2>
+                </div>
+                
+                <div id="menuOutput" class="markdown-body bg-green-50/50 p-4 rounded-lg border border-green-100 mb-6 min-h-[200px]">
+                    <!-- ここにMarkdownがレンダリングされる -->
+                </div>
+
+                <!-- 記録用フォーム -->
+                <div class="bg-gray-50 p-4 sm:p-5 rounded-lg border border-gray-200 mt-6">
+                    <h3 class="font-bold text-gray-700 mb-3 sm:mb-4 text-base sm:text-lg"><i class="ph ph-floppy-disk mr-1"></i> このメニューを本日の記録として保存</h3>
+                    <div class="mb-4">
+                        <label class="block text-sm text-gray-600 mb-1.5 font-medium">実施日</label>
+                        <input type="date" id="recordDate" class="border border-gray-300 rounded-lg p-3 text-base w-full md:w-auto focus:ring-2 focus:ring-green-500 focus:outline-none bg-white">
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm text-gray-600 mb-1.5 font-medium">実際の内容やメモ（任意で編集・追記）</label>
+                        <textarea id="recordMemo" rows="4" class="w-full border border-gray-300 rounded-lg p-3 text-base focus:ring-2 focus:ring-green-500 focus:outline-none bg-white" placeholder="提案されたメニューのうち、実際にやったことや子供たちの様子などをメモしておきましょう。"></textarea>
+                    </div>
+                    <button id="saveRecordBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition flex items-center gap-2 w-full md:w-auto justify-center text-base">
+                        <i class="ph ph-check-circle text-xl"></i> 記録を保存する
+                    </button>
+                    <p id="saveSuccessMsg" class="text-green-600 font-bold mt-2 hidden text-sm"><i class="ph ph-check"></i> 保存しました！「練習記録」タブで確認できます。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- パネル: 練習記録 -->
+        <div id="panelRecord" class="hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 md:p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-lg font-bold text-gray-700 border-l-4 border-blue-500 pl-2">これまでの練習記録</h2>
+                </div>
+
+                <div id="recordsList" class="space-y-4">
+                    <!-- 記録がここに動的に追加される -->
+                    <p class="text-gray-500 text-center py-8">まだ記録がありません。「メニュー提案」から実施したメニューを保存してください。</p>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <footer class="bg-gray-800 text-gray-400 text-center py-6 mt-auto">
+        <p class="text-sm">&copy; Junior Soft Tennis Coach App</p>
+        <p class="text-xs mt-1">Powered by Gemini API</p>
+    </footer>
+
+    <script>
+        // DOM要素
+        const tabSuggest = document.getElementById('tabSuggest');
+        const tabRecord = document.getElementById('tabRecord');
+        const panelSuggest = document.getElementById('panelSuggest');
+        const panelRecord = document.getElementById('panelRecord');
+        
+        const settingsBtn = document.getElementById('settingsBtn');
+        const apiSettingsModal = document.getElementById('apiSettingsModal');
+        const closeSettingsBtn = document.getElementById('closeSettingsBtn');
+        const apiKeyInput = document.getElementById('apiKeyInput');
+        const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+        
+        const generateBtn = document.getElementById('generateBtn');
+        const loading = document.getElementById('loading');
+        const resultArea = document.getElementById('resultArea');
+        const menuOutput = document.getElementById('menuOutput');
+        
+        const recordDate = document.getElementById('recordDate');
+        const recordMemo = document.getElementById('recordMemo');
+        const saveRecordBtn = document.getElementById('saveRecordBtn');
+        const saveSuccessMsg = document.getElementById('saveSuccessMsg');
+        const recordsList = document.getElementById('recordsList');
+
+        // カスタムモーダル用の関数
+        function showAlert(message) {
+            document.getElementById('customAlertText').innerText = message;
+            document.getElementById('customAlertModal').classList.remove('hidden');
+        }
+        document.getElementById('customAlertBtn').addEventListener('click', () => {
+            document.getElementById('customAlertModal').classList.add('hidden');
+        });
+
+        let confirmCallback = null;
+        function showConfirm(message, callback) {
+            document.getElementById('customConfirmText').innerText = message;
+            confirmCallback = callback;
+            document.getElementById('customConfirmModal').classList.remove('hidden');
+        }
+        document.getElementById('customConfirmCancelBtn').addEventListener('click', () => {
+            document.getElementById('customConfirmModal').classList.add('hidden');
+            confirmCallback = null;
+        });
+        document.getElementById('customConfirmOkBtn').addEventListener('click', () => {
+            document.getElementById('customConfirmModal').classList.add('hidden');
+            if (confirmCallback) confirmCallback();
+            confirmCallback = null;
+        });
+
+        // 状態
+        let apiKey = localStorage.getItem('gemini_api_key') || '';
+        let currentGeneratedMenuText = '';
+        let records = JSON.parse(localStorage.getItem('tennis_records')) || [];
+
+        // 重点カテゴリの定義と状態
+        const categoryList = [
+            "総合練習（全体的な基礎力向上）",
+            "ストローク（フォア・バック）",
+            "ボレー・スマッシュ（前衛練習）",
+            "サーブ・レシーブ",
+            "フットワーク・体力づくり",
+            "試合形式・戦術（ペア練習）"
+        ];
+        let selectedCategories = [];
+
+        // カテゴリタグの描画
+        function renderCategoryTags() {
+            const container = document.getElementById('categoryTags');
+            container.innerHTML = '';
+            
+            categoryList.forEach(category => {
+                const btn = document.createElement('button');
+                const index = selectedCategories.indexOf(category);
+                const isSelected = index !== -1;
+                
+                // ボタンの基本スタイル
+                btn.className = `px-4 py-2.5 sm:py-2 rounded-full text-sm sm:text-base font-medium transition flex items-center gap-1.5 border ${
+                    isSelected 
+                    ? 'bg-green-600 text-white border-green-600 shadow-md hover:bg-green-700' 
+                    : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50 shadow-sm'
+                }`;
+                
+                let badgeHtml = '';
+                if (isSelected) {
+                    badgeHtml = `<span class="bg-white text-green-600 rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold">${index + 1}</span>`;
+                }
+                
+                btn.innerHTML = `<span>${category}</span>${badgeHtml}`;
+                
+                btn.onclick = () => {
+                    if (isSelected) {
+                        selectedCategories = selectedCategories.filter(c => c !== category);
+                    } else {
+                        selectedCategories.push(category);
+                    }
+                    renderCategoryTags();
+                };
+                
+                container.appendChild(btn);
+            });
+        }
+
+        // 初期化処理
+        function init() {
+            // 今日の日付をセット
+            const today = new Date().toISOString().split('T')[0];
+            recordDate.value = today;
+
+            if (apiKey) {
+                apiKeyInput.value = apiKey;
+            }
+
+            renderCategoryTags();
+            renderRecords();
+        }
+
+        // タブ切り替え制御
+        function switchTab(tab) {
+            if (tab === 'suggest') {
+                tabSuggest.classList.replace('text-gray-500', 'text-green-700');
+                tabSuggest.classList.replace('border-transparent', 'border-green-600');
+                tabSuggest.classList.add('bg-white');
+                tabSuggest.classList.remove('hover:text-green-600', 'hover:bg-gray-100');
+                
+                tabRecord.classList.replace('text-green-700', 'text-gray-500');
+                tabRecord.classList.replace('border-green-600', 'border-transparent');
+                tabRecord.classList.remove('bg-white');
+                tabRecord.classList.add('hover:text-green-600', 'hover:bg-gray-100');
+                
+                panelSuggest.classList.remove('hidden');
+                panelRecord.classList.add('hidden');
+            } else {
+                tabRecord.classList.replace('text-gray-500', 'text-green-700');
+                tabRecord.classList.replace('border-transparent', 'border-green-600');
+                tabRecord.classList.add('bg-white');
+                tabRecord.classList.remove('hover:text-green-600', 'hover:bg-gray-100');
+                
+                tabSuggest.classList.replace('text-green-700', 'text-gray-500');
+                tabSuggest.classList.replace('border-green-600', 'border-transparent');
+                tabSuggest.classList.remove('bg-white');
+                tabSuggest.classList.add('hover:text-green-600', 'hover:bg-gray-100');
+                
+                panelSuggest.classList.add('hidden');
+                panelRecord.classList.remove('hidden');
+                renderRecords();
+            }
+        }
+
+        tabSuggest.addEventListener('click', () => switchTab('suggest'));
+        tabRecord.addEventListener('click', () => switchTab('record'));
+
+        // APIキー設定モーダル制御
+        settingsBtn.addEventListener('click', () => {
+            apiKeyInput.value = apiKey;
+            apiSettingsModal.classList.remove('hidden');
+        });
+        
+        closeSettingsBtn.addEventListener('click', () => {
+            apiSettingsModal.classList.add('hidden');
+        });
+
+        saveApiKeyBtn.addEventListener('click', () => {
+            const newKey = apiKeyInput.value.trim();
+            apiKey = newKey; // 空でも許容する（プレビュー環境用）
+            localStorage.setItem('gemini_api_key', apiKey);
+            apiSettingsModal.classList.add('hidden');
+            showAlert('API設定を保存しました。');
+        });
+
+        // ユーティリティ: 遅延関数（リトライ用）
+        const delay = ms => new Date(resolve => setTimeout(resolve, ms));
+
+        // Gemini API 呼び出し
+        async function generateMenu() {
+            const checkedGrades = Array.from(document.querySelectorAll('input[name="grade"]:checked')).map(cb => cb.value);
+            const gradeText = checkedGrades.length > 0 ? checkedGrades.join('、') : '指定なし';
+            const level = document.getElementById('level').value;
+            const playerCount = document.getElementById('playerCount').value;
+            const adultCount = document.getElementById('adultCount').value;
+            const duration = document.getElementById('duration').value;
+            
+            const focusDetail = document.getElementById('focusDetail').value.trim();
+            
+            let focusLines = [];
+            if (selectedCategories.length > 0) {
+                selectedCategories.forEach((c, i) => {
+                    focusLines.push(`第${i+1}優先: ${c}`);
+                });
+            } else {
+                focusLines.push('指定なし');
+            }
+
+            if (focusDetail !== '') {
+                focusLines.push(`具体的な要望: ${focusDetail}`);
+            }
+            const focus = focusLines.join('\n            ');
+
+            const prompt = `あなたは優秀なジュニア向け（小・中学生）ソフトテニスのコーチです。以下の条件に基づいて、今日の練習メニューを考案してください。
+            対象年齢に合わせて飽きずに楽しく、かつ効果的に上達できるような工夫を盛り込んでください。大人の人数を考慮し、球出しや指導の割り当ても提案に含めてください。
+
+            【条件】
+            - 対象学年: ${gradeText}
+            - レベル: ${level}
+            - 参加人数（子供）: ${playerCount}人
+            - 大人の人数（コーチ・保護者）: ${adultCount}人
+            - 練習時間: ${duration}分
+            - 重点課題・フォーカス: ${focus}
+
+            【出力形式の要件】
+            - ウォームアップ、主練習（基礎・応用）、クールダウンなどの時間配分を明記すること（合計が${duration}分になるように）。
+            - 各メニューの「目的」と「具体的なやり方・コーチの声かけのコツ」をわかりやすく記載すること。
+            - Markdown形式で見出しやリストを使って見やすく出力してください。`;
+
+            // UI更新
+            generateBtn.disabled = true;
+            generateBtn.classList.add('opacity-50');
+            resultArea.classList.add('hidden');
+            loading.classList.remove('hidden');
+            saveSuccessMsg.classList.add('hidden');
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+            // 指数バックオフによるリトライロジック
+            const maxRetries = 5;
+            let retryCount = 0;
+            const delays = [1000, 2000, 4000, 8000, 16000];
+
+            while (retryCount <= maxRetries) {
+                try {
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [{ text: prompt }]
+                            }],
+                            // 必要に応じてsystemInstructionを追加可能
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`API Error: ${response.status}`);
+                    }
+
+                    const data = await response.json();
+                    
+                    if (data.candidates && data.candidates[0].content.parts[0].text) {
+                        currentGeneratedMenuText = data.candidates[0].content.parts[0].text;
+                        
+                        // MarkdownをHTMLに変換して表示
+                        menuOutput.innerHTML = marked.parse(currentGeneratedMenuText);
+                        
+                        // 記録用メモエリアにテキストを初期セット
+                        const themeText = (selectedCategories.length > 0 ? selectedCategories.join('、') : '指定なし') + (focusDetail ? `\n（${focusDetail}）` : '');
+                        recordMemo.value = "【本日のテーマ】\n" + themeText + "\n\n【実施メモ・所感】\n";
+                        
+                        loading.classList.add('hidden');
+                        resultArea.classList.remove('hidden');
+                        break; // 成功したらループを抜ける
+                    } else {
+                        throw new Error('予期せぬAPIレスポンス形式です。');
+                    }
+
+                } catch (error) {
+                    if (retryCount < maxRetries) {
+                        await new Promise(resolve => setTimeout(resolve, delays[retryCount]));
+                        retryCount++;
+                    } else {
+                        loading.classList.add('hidden');
+                        showAlert('メニューの生成に失敗しました。APIキーを設定している場合は正しいか確認してください。\nエラー: ' + error.message);
+                        break;
+                    }
+                }
+            }
+            
+            generateBtn.disabled = false;
+            generateBtn.classList.remove('opacity-50');
+        }
+
+        generateBtn.addEventListener('click', generateMenu);
+
+        // 記録を保存
+        saveRecordBtn.addEventListener('click', () => {
+            const dateStr = recordDate.value;
+            if (!dateStr) {
+                showAlert('実施日を入力してください。');
+                return;
+            }
+
+            const focusDetail = document.getElementById('focusDetail').value.trim();
+            let focusText = selectedCategories.length > 0 ? selectedCategories.join('、') : '指定なし';
+            if (focusDetail !== '') {
+                focusText += `（${focusDetail}）`;
+            }
+            
+            const checkedGrades = Array.from(document.querySelectorAll('input[name="grade"]:checked')).map(cb => cb.value);
+            const gradeText = checkedGrades.length > 0 ? checkedGrades.join('、') : '指定なし';
+
+            const conditions = {
+                grade: gradeText,
+                level: document.getElementById('level').value,
+                playerCount: document.getElementById('playerCount').value,
+                adultCount: document.getElementById('adultCount').value,
+                duration: document.getElementById('duration').value,
+                focus: focusText
+            };
+
+            const newRecord = {
+                id: Date.now().toString(),
+                date: dateStr,
+                conditions: conditions,
+                menuContent: currentGeneratedMenuText, // AIが提案したMarkdownテキスト
+                memo: recordMemo.value // ユーザーが追記したメモ
+            };
+
+            // 配列の先頭に追加
+            records.unshift(newRecord);
+            
+            // LocalStorageに保存
+            localStorage.setItem('tennis_records', JSON.stringify(records));
+
+            // UIフィードバック
+            saveSuccessMsg.classList.remove('hidden');
+            setTimeout(() => {
+                saveSuccessMsg.classList.add('hidden');
+            }, 3000);
+        });
+
+        // 記録一覧の描画
+        function renderRecords() {
+            if (records.length === 0) {
+                recordsList.innerHTML = '<p class="text-gray-500 text-center py-8 bg-gray-50 rounded-lg">まだ記録がありません。「メニュー提案」から実施したメニューを保存してください。</p>';
+                return;
+            }
+
+            recordsList.innerHTML = '';
+            
+            records.forEach(record => {
+                const recordEl = document.createElement('div');
+                recordEl.className = 'bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden mb-4';
+                
+                // ヘッダー部分（クリックで開閉）
+                const headerEl = document.createElement('div');
+                headerEl.className = 'bg-gray-50 p-4 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition';
+                
+                // 日付のフォーマット
+                const dateObj = new Date(record.date);
+                const dateDisplay = `${dateObj.getFullYear()}年${dateObj.getMonth() + 1}月${dateObj.getDate()}日`;
+                
+                // 過去の記録との互換性のため大人の人数をチェック
+                const adultDisplay = record.conditions.adultCount ? ` / 大人${record.conditions.adultCount}人` : '';
+
+                headerEl.innerHTML = `
+                    <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
+                        <span class="font-bold text-gray-800 text-lg"><i class="ph ph-calendar text-blue-500 mr-1"></i>${dateDisplay}</span>
+                        <span class="text-sm text-gray-600 bg-white px-2 py-1 rounded border border-gray-200">${record.conditions.duration}分 / 子供${record.conditions.playerCount}人${adultDisplay}</span>
+                        <span class="text-sm text-green-700 font-medium truncate max-w-[200px]">テーマ: ${record.conditions.focus}</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button class="delete-btn text-red-500 hover:bg-red-50 p-1.5 rounded transition" data-id="${record.id}" title="削除">
+                            <i class="ph ph-trash"></i>
+                        </button>
+                        <i class="ph ph-caret-down text-gray-400 toggle-icon transition-transform"></i>
+                    </div>
+                `;
+
+                // コンテンツ部分
+                const contentEl = document.createElement('div');
+                contentEl.className = 'p-5 border-t border-gray-200 hidden bg-white';
+                
+                // メモがある場合
+                const memoHtml = record.memo.trim() ? `
+                    <div class="mb-4 bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded-r">
+                        <h4 class="text-sm font-bold text-yellow-800 mb-1">コーチメモ</h4>
+                        <p class="text-gray-700 text-sm whitespace-pre-wrap">${record.memo}</p>
+                    </div>
+                ` : '';
+
+                contentEl.innerHTML = `
+                    <div class="flex flex-wrap gap-2 mb-4 text-xs">
+                        <span class="bg-gray-100 px-2 py-1 rounded text-gray-600">対象: ${record.conditions.grade}</span>
+                        <span class="bg-gray-100 px-2 py-1 rounded text-gray-600">レベル: ${record.conditions.level}</span>
+                    </div>
+                    ${memoHtml}
+                    <div class="markdown-body text-sm bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        ${marked.parse(record.menuContent)}
+                    </div>
+                `;
+
+                // 開閉イベント
+                headerEl.addEventListener('click', (e) => {
+                    // 削除ボタンクリック時は開閉しない
+                    if(e.target.closest('.delete-btn')) return;
+                    
+                    const isHidden = contentEl.classList.contains('hidden');
+                    const icon = headerEl.querySelector('.toggle-icon');
+                    
+                    if (isHidden) {
+                        contentEl.classList.remove('hidden');
+                        icon.classList.add('rotate-180');
+                    } else {
+                        contentEl.classList.add('hidden');
+                        icon.classList.remove('rotate-180');
+                    }
+                });
+
+                // 削除イベント
+                const deleteBtn = headerEl.querySelector('.delete-btn');
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // イベント伝播停止
+                    showConfirm('この記録を削除してもよろしいですか？', () => {
+                        deleteRecord(record.id);
+                    });
+                });
+
+                recordEl.appendChild(headerEl);
+                recordEl.appendChild(contentEl);
+                recordsList.appendChild(recordEl);
+            });
+        }
+
+        // 記録の削除
+        function deleteRecord(id) {
+            records = records.filter(record => record.id !== id);
+            localStorage.setItem('tennis_records', JSON.stringify(records));
+            renderRecords();
+        }
+
+        // アプリケーション起動
+        init();
+
+    </script>
+</body>
+</html>
