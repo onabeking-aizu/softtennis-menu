@@ -437,6 +437,11 @@
 
         // Gemini API 呼び出し
         async function generateMenu() {
+            // APIキーの簡易チェック（プレビュー環境以外で空の場合は警告）
+            if (!apiKey && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && window.location.hostname !== '') {
+                // ただし、このプレビュー環境も特殊なホスト名のため、厳密なブロックはせず一度APIを叩かせます。
+            }
+
             const checkedGrades = Array.from(document.querySelectorAll('input[name="grade"]:checked')).map(cb => cb.value);
             const gradeText = checkedGrades.length > 0 ? checkedGrades.join('、') : '指定なし';
             const level = document.getElementById('level').value;
@@ -483,61 +488,111 @@
             loading.classList.remove('hidden');
             saveSuccessMsg.classList.add('hidden');
 
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            // 試行するモデルのリスト
+            // 1. プレビュー環境専用モデル (Canvas用)
+            // 2. 一般公開されている最新モデル (GitHub等で個人のAPIキーを使う用)
+            // 3. 一般公開されている安定モデル
+            const modelsToTry = [
+                'gemini-2.5-flash-preview-09-2025',
+                'gemini-2.5-flash',
+                'gemini-1.5-flash'
+            ];
+
+            let success = false;
+            let lastErrorMsg = '';
 
             // 指数バックオフによるリトライロジック
             const maxRetries = 5;
             let retryCount = 0;
             const delays = [1000, 2000, 4000, 8000, 16000];
 
-            while (retryCount <= maxRetries) {
-                try {
-                    const response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            contents: [{
-                                parts: [{ text: prompt }]
-                            }],
-                            // 必要に応じてsystemInstructionを追加可能
-                        })
-                    });
+            while (retryCount <= maxRetries && !success) {
+                let isModelNotFoundError = false;
 
-                    if (!response.ok) {
-                        throw new Error(`API Error: ${response.status}`);
-                    }
-
-                    const data = await response.json();
+                // モデルを順番に試すフォールバック処理
+                for (let model of modelsToTry) {
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
                     
-                    if (data.candidates && data.candidates[0].content.parts[0].text) {
-                        currentGeneratedMenuText = data.candidates[0].content.parts[0].text;
-                        
-                        // MarkdownをHTMLに変換して表示
-                        menuOutput.innerHTML = marked.parse(currentGeneratedMenuText);
-                        
-                        // 記録用メモエリアにテキストを初期セット
-                        const themeText = (selectedCategories.length > 0 ? selectedCategories.join('、') : '指定なし') + (focusDetail ? `\n（${focusDetail}）` : '');
-                        recordMemo.value = "【本日のテーマ】\n" + themeText + "\n\n【実施メモ・所感】\n";
-                        
-                        loading.classList.add('hidden');
-                        resultArea.classList.remove('hidden');
-                        break; // 成功したらループを抜ける
-                    } else {
-                        throw new Error('予期せぬAPIレスポンス形式です。');
-                    }
+                    try {
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                contents: [{
+                                    parts: [{ text: prompt }]
+                                }]
+                            })
+                        });
 
-                } catch (error) {
-                    if (retryCount < maxRetries) {
-                        await new Promise(resolve => setTimeout(resolve, delays[retryCount]));
-                        retryCount++;
-                    } else {
-                        loading.classList.add('hidden');
-                        showAlert('メニューの生成に失敗しました。APIキーを設定している場合は正しいか確認してください。\nエラー: ' + error.message);
-                        break;
+                        // 404エラーの場合は、その環境でモデルが使えないだけなので、次のモデルを試す
+                        if (response.status === 404) {
+                            lastErrorMsg = `モデル未発見(404): ${model}`;
+                            isModelNotFoundError = true;
+                            continue; 
+                        }
+
+                        // 400エラー(APIキー無効など)の場合は、致命的なのでリトライループを抜ける判定用に記録
+                        if (response.status === 400 && !apiKey) {
+                             throw new Error('APIキーが設定されていないか、無効です。設定画面から正しいAPIキーを入力してください。');
+                        }
+
+                        if (!response.ok) {
+                            throw new Error(`API通信エラー: ${response.status}`);
+                        }
+
+                        const data = await response.json();
+                        
+                        if (data.candidates && data.candidates[0].content.parts[0].text) {
+                            currentGeneratedMenuText = data.candidates[0].content.parts[0].text;
+                            
+                            // MarkdownをHTMLに変換して表示
+                            menuOutput.innerHTML = marked.parse(currentGeneratedMenuText);
+                            
+                            // 記録用メモエリアにテキストを初期セット
+                            const themeText = (selectedCategories.length > 0 ? selectedCategories.join('、') : '指定なし') + (focusDetail ? `\n（${focusDetail}）` : '');
+                            recordMemo.value = "【本日のテーマ】\n" + themeText + "\n\n【実施メモ・所感】\n";
+                            
+                            loading.classList.add('hidden');
+                            resultArea.classList.remove('hidden');
+                            success = true;
+                            break; // 成功したのでモデル探索ループを抜ける
+                        } else {
+                            throw new Error('予期せぬAPIレスポンス形式です。');
+                        }
+
+                    } catch (error) {
+                        lastErrorMsg = error.message;
+                        isModelNotFoundError = false;
+                        break; // 通信エラー等の場合は、この回のリトライを終了して次のdelayへ
                     }
                 }
+
+                if (success) break; // 完全に成功したらリトライループも抜ける
+
+                // 404エラーで全モデルを試し終わった場合は、待機しても無駄なので終了
+                if (isModelNotFoundError && !success) {
+                    lastErrorMsg = '利用可能なAIモデルが見つかりませんでした。APIキーの権限をご確認ください。';
+                    break;
+                }
+                
+                // APIキー自体のエラーの場合はリトライしない
+                if (lastErrorMsg.includes('APIキーが設定されていない')) {
+                    break;
+                }
+
+                if (retryCount < maxRetries) {
+                    await new Promise(resolve => setTimeout(resolve, delays[retryCount]));
+                    retryCount++;
+                } else {
+                    break;
+                }
+            }
+            
+            if (!success) {
+                loading.classList.add('hidden');
+                showAlert('メニューの生成に失敗しました。\n\n' + lastErrorMsg);
             }
             
             generateBtn.disabled = false;
