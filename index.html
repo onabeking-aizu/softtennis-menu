@@ -152,6 +152,14 @@
                             </label>
                         </div>
                     </div>
+                    <!-- 練習会場 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">練習会場</label>
+                        <select id="venue" class="w-full border border-gray-300 rounded-lg p-3 text-base focus:ring-2 focus:ring-green-500 focus:outline-none bg-white">
+                            <option value="屋外コート" selected>屋外コート</option>
+                            <option value="体育館（屋内）">体育館（屋内）</option>
+                        </select>
+                    </div>
                     <!-- レベル -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">レベル</label>
@@ -442,6 +450,7 @@
                 // ただし、このプレビュー環境も特殊なホスト名のため、厳密なブロックはせず一度APIを叩かせます。
             }
 
+            const venue = document.getElementById('venue').value;
             const checkedGrades = Array.from(document.querySelectorAll('input[name="grade"]:checked')).map(cb => cb.value);
             const gradeText = checkedGrades.length > 0 ? checkedGrades.join('、') : '指定なし';
             const level = document.getElementById('level').value;
@@ -466,9 +475,10 @@
             const focus = focusLines.join('\n            ');
 
             const prompt = `あなたは優秀なジュニア向け（小・中学生）ソフトテニスのコーチです。以下の条件に基づいて、今日の練習メニューを考案してください。
-            対象年齢に合わせて飽きずに楽しく、かつ効果的に上達できるような工夫を盛り込んでください。大人の人数を考慮し、球出しや指導の割り当ても提案に含めてください。
+            対象年齢や練習会場の環境に合わせて飽きずに楽しく、かつ効果的に上達できるような工夫を盛り込んでください。大人の人数を考慮し、球出しや指導の割り当ても提案に含めてください。体育館の場合は、ボールの弾み方の違いやスペースの制限なども考慮したメニューを提案してください。
 
             【条件】
+            - 練習会場: ${venue}
             - 対象学年: ${gradeText}
             - レベル: ${level}
             - 参加人数（子供）: ${playerCount}人
@@ -538,6 +548,10 @@
                              throw new Error('APIキーが設定されていないか、無効です。設定画面から正しいAPIキーを入力してください。');
                         }
 
+                        if (response.status === 429) {
+                            throw new Error('APIのリクエスト制限(429エラー)に達しました。');
+                        }
+
                         if (!response.ok) {
                             throw new Error(`API通信エラー: ${response.status}`);
                         }
@@ -592,7 +606,11 @@
             
             if (!success) {
                 loading.classList.add('hidden');
-                showAlert('メニューの生成に失敗しました。\n\n' + lastErrorMsg);
+                let finalMsg = 'メニューの生成に失敗しました。\n\n' + lastErrorMsg;
+                if (lastErrorMsg.includes('429')) {
+                    finalMsg += '\n\n【対処法】\nAPIの利用枠（無料枠）の短時間の上限、または1日の上限に達した可能性があります。数分〜数十分ほど時間を置いてから、再度お試しください。';
+                }
+                showAlert(finalMsg);
             }
             
             generateBtn.disabled = false;
@@ -619,6 +637,7 @@
             const gradeText = checkedGrades.length > 0 ? checkedGrades.join('、') : '指定なし';
 
             const conditions = {
+                venue: document.getElementById('venue').value,
                 grade: gradeText,
                 level: document.getElementById('level').value,
                 playerCount: document.getElementById('playerCount').value,
@@ -700,6 +719,7 @@
 
                 contentEl.innerHTML = `
                     <div class="flex flex-wrap gap-2 mb-4 text-xs">
+                        <span class="bg-gray-100 px-2 py-1 rounded text-gray-600">会場: ${record.conditions.venue || '未設定'}</span>
                         <span class="bg-gray-100 px-2 py-1 rounded text-gray-600">対象: ${record.conditions.grade}</span>
                         <span class="bg-gray-100 px-2 py-1 rounded text-gray-600">レベル: ${record.conditions.level}</span>
                     </div>
