@@ -31,43 +31,21 @@
         .markdown-body ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 0.75rem; }
         .markdown-body ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 0.75rem; }
         .markdown-body li { margin-bottom: 0.25rem; }
-        .markdown-body strong { font-weight: bold; color: #15803d; }
-        .markdown-body blockquote { border-left: 4px solid #4ade80; padding-left: 1rem; color: #4b5563; background: #f0fdf4; padding-top: 0.5rem; padding-bottom: 0.5rem; border-radius: 0 0.5rem 0.5rem 0; margin-bottom: 1rem; }
-    </style>
-</head>
-<body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col">
-
-    <!-- ヘッダー -->
-    <header class="bg-green-600 text-white p-4 shadow-md">
-        <div class="max-w-4xl mx-auto flex items-center justify-between">
-            <h1 class="text-xl md:text-2xl font-bold flex items-center gap-2">
-                <i class="ph ph-tennis-ball text-3xl"></i>
-                ジュニアソフトテニスコーチ
-            </h1>
-            <button id="settingsBtn" class="p-2 hover:bg-green-700 rounded-full transition" title="API設定">
-                <i class="ph ph-gear text-2xl"></i>
-            </button>
-        </div>
-    </header>
-
-    <!-- メインコンテンツ -->
-    <main class="flex-grow max-w-4xl w-full mx-auto p-4 md:p-6">
-        
         <!-- APIキー設定モーダル (初期非表示) -->
         <div id="apiSettingsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 px-4">
             <div class="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
                 <div class="flex justify-between items-center mb-4">
-                    <h2 class="text-lg font-bold text-gray-700">APIキー設定</h2>
+                    <h2 class="text-lg font-bold text-gray-700">システム設定</h2>
                     <button id="closeSettingsBtn" class="text-gray-500 hover:text-gray-800">
                         <i class="ph ph-x text-xl"></i>
                     </button>
                 </div>
                 <p class="text-sm text-gray-600 mb-4">
-                    練習メニューを自動生成するには、Google AI StudioのAPIキー(Gemini API)が必要です。キーはブラウザにのみ保存されます。<br>
+                    AI機能を利用するには、連携する「Google Apps Script (GAS) のWebアプリURL」が必要です。URLはブラウザにのみ保存されます。<br>
                     <span class="text-green-600 font-bold">※プレビュー環境では入力不要で動作します。</span>
                 </p>
-                <input type="password" id="apiKeyInput" placeholder="AIzaSy..." class="w-full border border-gray-300 rounded-lg p-3 mb-4 focus:ring-2 focus:ring-green-500 focus:outline-none">
-                <button id="saveApiKeyBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition">
+                <input type="text" id="gasUrlInput" placeholder="https://script.google.com/macros/s/..." class="w-full border border-gray-300 rounded-lg p-3 mb-4 focus:ring-2 focus:ring-green-500 focus:outline-none">
+                <button id="saveGasUrlBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition">
                     保存する
                 </button>
             </div>
@@ -87,7 +65,7 @@
                 <p id="customConfirmText" class="text-gray-700 mb-6 whitespace-pre-wrap"></p>
                 <div class="flex justify-center gap-4">
                     <button id="customConfirmCancelBtn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-6 rounded-lg transition">キャンセル</button>
-                    <button id="customConfirmOkBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition">削除する</button>
+                    <button id="customConfirmOkBtn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition">実行する</button>
                 </div>
             </div>
         </div>
@@ -99,6 +77,9 @@
             </button>
             <button id="tabRecord" class="flex-1 py-3.5 sm:py-4 text-center font-bold text-gray-500 border-b-2 border-transparent hover:text-green-600 hover:bg-gray-100 rounded-t-lg transition flex justify-center items-center gap-1">
                 <i class="ph ph-calendar-check text-lg"></i> <span class="text-sm sm:text-base">練習記録</span>
+            </button>
+            <button id="tabAdvice" class="flex-1 py-3.5 sm:py-4 text-center font-bold text-gray-500 border-b-2 border-transparent hover:text-purple-600 hover:bg-gray-100 rounded-t-lg transition flex justify-center items-center gap-1">
+                <i class="ph ph-chat-circle-text text-lg"></i> <span class="text-sm sm:text-base">お悩み相談</span>
             </button>
         </div>
 
@@ -262,6 +243,30 @@
 
         <!-- パネル: 練習記録 -->
         <div id="panelRecord" class="hidden">
+            
+            <!-- AI分析機能エリア -->
+            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl shadow-sm border border-blue-200 p-4 sm:p-6 mb-6">
+                <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+                    <div>
+                        <h3 class="text-lg font-bold text-blue-800 flex items-center gap-2"><i class="ph ph-sparkle text-yellow-500 text-xl"></i> 過去の記録から次回テーマをAIに相談</h3>
+                        <p class="text-sm text-blue-600 mt-1">保存された直近の練習記録（メモなど）を分析し、次にフォーカスすべき課題をAIが提案します。</p>
+                    </div>
+                    <button id="analyzeRecordsBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 px-6 rounded-full shadow transition flex items-center justify-center gap-2 w-full md:w-auto whitespace-nowrap">
+                        分析スタート ✨
+                    </button>
+                </div>
+                
+                <div id="analyzeLoading" class="hidden text-center py-6">
+                    <i class="ph ph-spinner-gap text-3xl text-blue-600 animate-spin mx-auto mb-2"></i>
+                    <p class="text-blue-700 text-sm font-medium">過去の記録を分析中...</p>
+                </div>
+
+                <div id="analyzeResultArea" class="hidden mt-4 bg-white p-5 rounded-lg border border-blue-100 shadow-inner">
+                    <h4 class="font-bold text-blue-800 border-b border-blue-100 pb-2 mb-3">AIからの分析結果と提案</h4>
+                    <div id="analyzeOutput" class="markdown-body text-sm"></div>
+                </div>
+            </div>
+
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 md:p-6">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-lg font-bold text-gray-700 border-l-4 border-blue-500 pl-2">これまでの練習記録</h2>
@@ -270,6 +275,50 @@
                 <div id="recordsList" class="space-y-4">
                     <!-- 記録がここに動的に追加される -->
                     <p class="text-gray-500 text-center py-8">まだ記録がありません。「メニュー提案」から実施したメニューを保存してください。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- パネル: お悩み相談 -->
+        <div id="panelAdvice" class="hidden">
+            <div class="bg-white rounded-xl shadow-sm border border-purple-200 p-4 sm:p-6 mb-6">
+                <h2 class="text-lg font-bold text-gray-700 mb-4 border-l-4 border-purple-500 pl-2">コーチのお悩み・シチュエーション相談 ✨</h2>
+                <p class="text-sm text-gray-600 mb-6">子供たちの指導で困っていることや、モチベーションを上げる声かけについて、AIメンターに相談してみましょう。</p>
+                
+                <div class="mb-5">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">よくあるお悩みから選ぶ</label>
+                    <div class="flex flex-wrap gap-2">
+                        <button class="trouble-btn px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-full text-sm transition">ミスを引きずって落ち込んでいる</button>
+                        <button class="trouble-btn px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-full text-sm transition">声が出ない・元気がない</button>
+                        <button class="trouble-btn px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-full text-sm transition">試合になると緊張して足が動かない</button>
+                        <button class="trouble-btn px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-full text-sm transition">遊び半分で集中力がない</button>
+                        <button class="trouble-btn px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-full text-sm transition">前衛がポーチに出るのを怖がる</button>
+                    </div>
+                </div>
+
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">具体的な相談内容（自由入力）</label>
+                    <textarea id="troubleInput" rows="4" class="w-full border border-gray-300 rounded-lg p-3 text-base focus:ring-2 focus:ring-purple-500 focus:outline-none bg-white" placeholder="例: ペアの仲が悪くて連携がうまくいきません。どう声をかければいいですか？"></textarea>
+                </div>
+
+                <div class="text-center">
+                    <button id="consultBtn" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3.5 px-8 rounded-full shadow-lg transition flex items-center justify-center gap-2 mx-auto w-full md:w-auto text-base">
+                        <i class="ph ph-sparkle text-xl"></i> AIメンターにアドバイスをもらう
+                    </button>
+                </div>
+            </div>
+
+            <!-- お悩み相談 ローディング -->
+            <div id="adviceLoading" class="hidden text-center py-10">
+                <i class="ph ph-spinner-gap text-4xl text-purple-600 animate-spin mx-auto mb-4"></i>
+                <p class="text-gray-600 font-medium">AIメンターがアドバイスを考案中...</p>
+            </div>
+
+            <!-- お悩み相談 結果エリア -->
+            <div id="adviceResultArea" class="hidden bg-white rounded-xl shadow-sm border border-purple-200 p-5 md:p-6">
+                <h2 class="text-lg font-bold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2"><i class="ph ph-lightbulb text-yellow-500 text-xl"></i>AIメンターからの回答</h2>
+                <div id="adviceOutput" class="markdown-body bg-purple-50/50 p-5 rounded-lg border border-purple-100">
+                    <!-- Markdown -->
                 </div>
             </div>
         </div>
@@ -285,14 +334,16 @@
         // DOM要素
         const tabSuggest = document.getElementById('tabSuggest');
         const tabRecord = document.getElementById('tabRecord');
+        const tabAdvice = document.getElementById('tabAdvice');
         const panelSuggest = document.getElementById('panelSuggest');
         const panelRecord = document.getElementById('panelRecord');
+        const panelAdvice = document.getElementById('panelAdvice');
         
         const settingsBtn = document.getElementById('settingsBtn');
         const apiSettingsModal = document.getElementById('apiSettingsModal');
         const closeSettingsBtn = document.getElementById('closeSettingsBtn');
-        const apiKeyInput = document.getElementById('apiKeyInput');
-        const saveApiKeyBtn = document.getElementById('saveApiKeyBtn');
+        const gasUrlInput = document.getElementById('gasUrlInput');
+        const saveGasUrlBtn = document.getElementById('saveGasUrlBtn');
         
         const generateBtn = document.getElementById('generateBtn');
         const loading = document.getElementById('loading');
@@ -304,6 +355,18 @@
         const saveRecordBtn = document.getElementById('saveRecordBtn');
         const saveSuccessMsg = document.getElementById('saveSuccessMsg');
         const recordsList = document.getElementById('recordsList');
+
+        // 新機能のDOM
+        const analyzeRecordsBtn = document.getElementById('analyzeRecordsBtn');
+        const analyzeLoading = document.getElementById('analyzeLoading');
+        const analyzeResultArea = document.getElementById('analyzeResultArea');
+        const analyzeOutput = document.getElementById('analyzeOutput');
+
+        const consultBtn = document.getElementById('consultBtn');
+        const troubleInput = document.getElementById('troubleInput');
+        const adviceLoading = document.getElementById('adviceLoading');
+        const adviceResultArea = document.getElementById('adviceResultArea');
+        const adviceOutput = document.getElementById('adviceOutput');
 
         // カスタムモーダル用の関数
         function showAlert(message) {
@@ -331,7 +394,8 @@
         });
 
         // 状態
-        let apiKey = localStorage.getItem('gemini_api_key') || '';
+        let gasUrl = localStorage.getItem('gas_web_app_url') || '';
+        const canvasApiKey = ""; // プレビュー環境用
         let currentGeneratedMenuText = '';
         let records = JSON.parse(localStorage.getItem('tennis_records')) || [];
 
@@ -390,8 +454,8 @@
             const today = new Date().toISOString().split('T')[0];
             recordDate.value = today;
 
-            if (apiKey) {
-                apiKeyInput.value = apiKey;
+            if (gasUrl) {
+                gasUrlInput.value = gasUrl;
             }
 
             renderCategoryTags();
@@ -400,42 +464,46 @@
 
         // タブ切り替え制御
         function switchTab(tab) {
+            // リセット
+            [tabSuggest, tabRecord, tabAdvice].forEach(t => {
+                t.classList.replace('text-green-700', 'text-gray-500');
+                t.classList.replace('text-purple-700', 'text-gray-500');
+                t.classList.remove('border-green-600', 'border-purple-600', 'bg-white');
+                t.classList.add('border-transparent');
+                if(t === tabAdvice) {
+                    t.classList.add('hover:text-purple-600');
+                } else {
+                    t.classList.add('hover:text-green-600');
+                }
+            });
+            [panelSuggest, panelRecord, panelAdvice].forEach(p => p.classList.add('hidden'));
+
             if (tab === 'suggest') {
                 tabSuggest.classList.replace('text-gray-500', 'text-green-700');
-                tabSuggest.classList.replace('border-transparent', 'border-green-600');
-                tabSuggest.classList.add('bg-white');
-                tabSuggest.classList.remove('hover:text-green-600', 'hover:bg-gray-100');
-                
-                tabRecord.classList.replace('text-green-700', 'text-gray-500');
-                tabRecord.classList.replace('border-green-600', 'border-transparent');
-                tabRecord.classList.remove('bg-white');
-                tabRecord.classList.add('hover:text-green-600', 'hover:bg-gray-100');
-                
+                tabSuggest.classList.add('border-green-600', 'bg-white');
+                tabSuggest.classList.remove('hover:text-green-600');
                 panelSuggest.classList.remove('hidden');
-                panelRecord.classList.add('hidden');
-            } else {
+            } else if (tab === 'record') {
                 tabRecord.classList.replace('text-gray-500', 'text-green-700');
-                tabRecord.classList.replace('border-transparent', 'border-green-600');
-                tabRecord.classList.add('bg-white');
-                tabRecord.classList.remove('hover:text-green-600', 'hover:bg-gray-100');
-                
-                tabSuggest.classList.replace('text-green-700', 'text-gray-500');
-                tabSuggest.classList.replace('border-green-600', 'border-transparent');
-                tabSuggest.classList.remove('bg-white');
-                tabSuggest.classList.add('hover:text-green-600', 'hover:bg-gray-100');
-                
-                panelSuggest.classList.add('hidden');
+                tabRecord.classList.add('border-green-600', 'bg-white');
+                tabRecord.classList.remove('hover:text-green-600');
                 panelRecord.classList.remove('hidden');
                 renderRecords();
+            } else if (tab === 'advice') {
+                tabAdvice.classList.replace('text-gray-500', 'text-purple-700');
+                tabAdvice.classList.add('border-purple-600', 'bg-white');
+                tabAdvice.classList.remove('hover:text-purple-600');
+                panelAdvice.classList.remove('hidden');
             }
         }
 
         tabSuggest.addEventListener('click', () => switchTab('suggest'));
         tabRecord.addEventListener('click', () => switchTab('record'));
+        tabAdvice.addEventListener('click', () => switchTab('advice'));
 
-        // APIキー設定モーダル制御
+        // システム設定モーダル制御
         settingsBtn.addEventListener('click', () => {
-            apiKeyInput.value = apiKey;
+            gasUrlInput.value = gasUrl;
             apiSettingsModal.classList.remove('hidden');
         });
         
@@ -443,24 +511,78 @@
             apiSettingsModal.classList.add('hidden');
         });
 
-        saveApiKeyBtn.addEventListener('click', () => {
-            const newKey = apiKeyInput.value.trim();
-            apiKey = newKey; // 空でも許容する（プレビュー環境用）
-            localStorage.setItem('gemini_api_key', apiKey);
+        saveGasUrlBtn.addEventListener('click', () => {
+            const newUrl = gasUrlInput.value.trim();
+            gasUrl = newUrl; 
+            localStorage.setItem('gas_web_app_url', gasUrl);
             apiSettingsModal.classList.add('hidden');
-            showAlert('API設定を保存しました。');
+            showAlert('GAS WebアプリURLを保存しました。');
         });
 
-        // ユーティリティ: 遅延関数（リトライ用）
-        const delay = ms => new Date(resolve => setTimeout(resolve, ms));
+        // 共通のGemini API 呼び出し関数 (GASサーバー経由に変更)
+        async function fetchGeminiAPI(prompt) {
+            const maxRetries = 5;
+            const delays = [1000, 2000, 4000, 8000, 16000];
+            
+            for (let retryCount = 0; retryCount <= maxRetries; retryCount++) {
+                try {
+                    let data;
+                    
+                    if (gasUrl) {
+                        // GAS上のAPIルートを呼び出す (CORSプリフライトを回避するため text/plain を使用)
+                        const response = await fetch(gasUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain' },
+                            body: JSON.stringify({ prompt: prompt })
+                        });
+                        data = await response.json();
 
-        // Gemini API 呼び出し
-        async function generateMenu() {
-            // APIキーの簡易チェック（プレビュー環境以外で空の場合は警告）
-            if (!apiKey && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1' && window.location.hostname !== '') {
-                // ただし、このプレビュー環境も特殊なホスト名のため、厳密なブロックはせず一度APIを叩かせます。
+                        // GASスクリプト内でエラーハンドリングした結果のステータスコードをチェック
+                        if (data.status && data.status !== 200) {
+                            if (data.status === 429) throw new Error('APIのリクエスト制限(429エラー)に達しました。');
+                            throw new Error(data.error || 'サーバーエラーが発生しました。');
+                        }
+                    } else {
+                        // プレビュー環境(Canvas)用の一時的なフォールバック動作
+                        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${canvasApiKey}`;
+                        const response = await fetch(apiUrl, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                        });
+                        const rawData = await response.json();
+                        
+                        if (!response.ok) {
+                            if (response.status === 429) throw new Error('APIのリクエスト制限(429エラー)に達しました。');
+                            throw new Error('サーバーエラーが発生しました。');
+                        }
+                        data = { text: rawData.candidates?.[0]?.content?.parts?.[0]?.text };
+                    }
+
+                    if (data && data.text) {
+                        return data.text; // 成功
+                    } else {
+                        throw new Error('予期せぬAPIレスポンス形式です。');
+                    }
+                } catch (error) {
+                    if (error.message.includes('APIのリクエスト制限')) {
+                        throw error; // 致命的なエラーはすぐ投げる
+                    }
+                    if (retryCount < maxRetries) {
+                        await new Promise(resolve => setTimeout(resolve, delays[retryCount]));
+                    } else {
+                        let finalMsg = error.message;
+                        if (finalMsg.includes('429')) {
+                            finalMsg += '\n\n【対処法】\n時間をおいてから再度お試しください。';
+                        }
+                        throw new Error(finalMsg);
+                    }
+                }
             }
+        }
 
+        // ① メニュー提案 API 呼び出し
+        generateBtn.addEventListener('click', async () => {
             const venue = document.getElementById('venue').value;
             const checkedGrades = Array.from(document.querySelectorAll('input[name="grade"]:checked')).map(cb => cb.value);
             const gradeText = checkedGrades.length > 0 ? checkedGrades.join('、') : '指定なし';
@@ -469,7 +591,6 @@
             const adultCount = document.getElementById('adultCount').value;
             const courtCount = document.getElementById('courtCount').value;
             const duration = document.getElementById('duration').value;
-            
             const focusDetail = document.getElementById('focusDetail').value.trim();
             
             let focusLines = [];
@@ -486,7 +607,6 @@
             }
             const focus = focusLines.join('\n            ');
 
-            // 知識に基づいたより高度なプロンプトの構築
             const prompt = `あなたは最新の指導理論や実践的な練習法に精通した、優秀なジュニア向け（小・中学生）ソフトテニスのコーチです。
             以下の条件に基づいて、今日の練習メニューを考案してください。
 
@@ -518,118 +638,108 @@
             loading.classList.remove('hidden');
             saveSuccessMsg.classList.add('hidden');
 
-            // 試行するモデルのリスト
-            const modelsToTry = [
-                'gemini-2.5-flash-preview-09-2025',
-                'gemini-2.5-flash',
-                'gemini-1.5-flash'
-            ];
-
-            let success = false;
-            let lastErrorMsg = '';
-
-            // 指数バックオフによるリトライロジック
-            const maxRetries = 5;
-            let retryCount = 0;
-            const delays = [1000, 2000, 4000, 8000, 16000];
-
-            while (retryCount <= maxRetries && !success) {
-                let isModelNotFoundError = false;
-
-                for (let model of modelsToTry) {
-                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-                    
-                    try {
-                        const response = await fetch(apiUrl, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                contents: [{
-                                    parts: [{ text: prompt }]
-                                }]
-                            })
-                        });
-
-                        if (response.status === 404) {
-                            lastErrorMsg = `モデル未発見(404): ${model}`;
-                            isModelNotFoundError = true;
-                            continue; 
-                        }
-
-                        if (response.status === 400 && !apiKey) {
-                             throw new Error('APIキーが設定されていないか、無効です。設定画面から正しいAPIキーを入力してください。');
-                        }
-
-                        if (response.status === 429) {
-                            throw new Error('APIのリクエスト制限(429エラー)に達しました。');
-                        }
-
-                        if (!response.ok) {
-                            throw new Error(`API通信エラー: ${response.status}`);
-                        }
-
-                        const data = await response.json();
-                        
-                        if (data.candidates && data.candidates[0].content.parts[0].text) {
-                            currentGeneratedMenuText = data.candidates[0].content.parts[0].text;
-                            
-                            // MarkdownをHTMLに変換して表示
-                            menuOutput.innerHTML = marked.parse(currentGeneratedMenuText);
-                            
-                            // 記録用メモエリアにテキストを初期セット
-                            const themeText = (selectedCategories.length > 0 ? selectedCategories.join('、') : '指定なし') + (focusDetail ? `\n（${focusDetail}）` : '');
-                            recordMemo.value = "【本日のテーマ】\n" + themeText + "\n\n【実施メモ・所感・アレンジした点など】\n";
-                            
-                            loading.classList.add('hidden');
-                            resultArea.classList.remove('hidden');
-                            success = true;
-                            break; 
-                        } else {
-                            throw new Error('予期せぬAPIレスポンス形式です。');
-                        }
-
-                    } catch (error) {
-                        lastErrorMsg = error.message;
-                        isModelNotFoundError = false;
-                        break; 
-                    }
-                }
-
-                if (success) break; 
-
-                if (isModelNotFoundError && !success) {
-                    lastErrorMsg = '利用可能なAIモデルが見つかりませんでした。APIキーの権限をご確認ください。';
-                    break;
-                }
+            try {
+                const resultText = await fetchGeminiAPI(prompt);
+                currentGeneratedMenuText = resultText;
                 
-                if (lastErrorMsg.includes('APIキーが設定されていない')) {
-                    break;
-                }
-
-                if (retryCount < maxRetries) {
-                    await new Promise(resolve => setTimeout(resolve, delays[retryCount]));
-                    retryCount++;
-                } else {
-                    break;
-                }
-            }
-            
-            if (!success) {
+                // MarkdownをHTMLに変換して表示
+                menuOutput.innerHTML = marked.parse(currentGeneratedMenuText);
+                
+                // 記録用メモエリアにテキストを初期セット
+                const themeText = (selectedCategories.length > 0 ? selectedCategories.join('、') : '指定なし') + (focusDetail ? `\n（${focusDetail}）` : '');
+                recordMemo.value = "【本日のテーマ】\n" + themeText + "\n\n【実施メモ・所感・アレンジした点など】\n";
+                
                 loading.classList.add('hidden');
-                let finalMsg = 'メニューの生成に失敗しました。\n\n' + lastErrorMsg;
-                if (lastErrorMsg.includes('429')) {
-                    finalMsg += '\n\n【対処法】\nAPIの利用枠（無料枠）の短時間の上限、または1日の上限に達した可能性があります。数分〜数十分ほど時間を置いてから、再度お試しください。';
-                }
-                showAlert(finalMsg);
+                resultArea.classList.remove('hidden');
+            } catch (error) {
+                loading.classList.add('hidden');
+                showAlert('メニューの生成に失敗しました。\n\n' + error.message);
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.classList.remove('opacity-50');
             }
-            
-            generateBtn.disabled = false;
-            generateBtn.classList.remove('opacity-50');
-        }
+        });
 
-        generateBtn.addEventListener('click', generateMenu);
+        // ② お悩み相談 API 呼び出し
+        document.querySelectorAll('.trouble-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                troubleInput.value = e.target.innerText;
+            });
+        });
+
+        consultBtn.addEventListener('click', async () => {
+            const troubleText = troubleInput.value.trim();
+            if (!troubleText) {
+                showAlert('相談内容を入力するか、よくあるお悩みから選択してください。');
+                return;
+            }
+
+            consultBtn.disabled = true;
+            consultBtn.classList.add('opacity-50');
+            adviceResultArea.classList.add('hidden');
+            adviceLoading.classList.remove('hidden');
+
+            const prompt = `あなたは最新のスポーツ心理学や指導理論に精通した、優秀なジュニア向けソフトテニスコーチのAIメンターです。
+現場のコーチから以下のような悩み・相談が寄せられました。
+子供たちのモチベーションを上げるための具体的な「声かけのフレーズ」や「指導の工夫・練習メニューのアイデア」を実践的にアドバイスしてください。
+
+【コーチからの相談】
+${troubleText}
+
+Markdown形式で、温かく励ますようなトーンで回答してください。`;
+
+            try {
+                const resultText = await fetchGeminiAPI(prompt);
+                adviceOutput.innerHTML = marked.parse(resultText);
+                adviceResultArea.classList.remove('hidden');
+            } catch (error) {
+                showAlert('アドバイスの取得に失敗しました。\n\n' + error.message);
+            } finally {
+                adviceLoading.classList.add('hidden');
+                consultBtn.disabled = false;
+                consultBtn.classList.remove('opacity-50');
+            }
+        });
+
+        // ③ 過去記録からの分析 API 呼び出し
+        analyzeRecordsBtn.addEventListener('click', async () => {
+            if (records.length === 0) {
+                showAlert('過去の記録がありません。まずは練習メニューを実施・保存してください。');
+                return;
+            }
+
+            analyzeRecordsBtn.disabled = true;
+            analyzeRecordsBtn.classList.add('opacity-50');
+            analyzeResultArea.classList.add('hidden');
+            analyzeLoading.classList.remove('hidden');
+
+            // 直近最大5件の記録を要約用に抽出
+            const recentRecords = records.slice(0, 5).map(r => {
+                return `- ${r.date} (対象:${r.conditions.grade}, レベル:${r.conditions.level})\n  テーマ: ${r.conditions.focus}\n  コーチメモ: ${r.memo}`;
+            }).join('\n\n');
+
+            const prompt = `あなたはジュニア向けソフトテニスの優秀なAIアシスタントコーチです。
+以下の「過去の練習記録（直近の実施内容とコーチのメモ）」を分析し、
+次回の練習でフォーカスすべき課題や、おすすめの練習テーマを提案してください。
+
+【過去の練習記録（直近最大5件）】
+${recentRecords}
+
+Markdown形式で、過去の傾向に対する簡単な分析と、次回のおすすめテーマ（可能なら具体的な練習案も）を提示してください。`;
+
+            try {
+                const resultText = await fetchGeminiAPI(prompt);
+                analyzeOutput.innerHTML = marked.parse(resultText);
+                analyzeResultArea.classList.remove('hidden');
+            } catch (error) {
+                showAlert('分析に失敗しました。\n\n' + error.message);
+            } finally {
+                analyzeLoading.classList.add('hidden');
+                analyzeRecordsBtn.disabled = false;
+                analyzeRecordsBtn.classList.remove('opacity-50');
+            }
+        });
+
 
         // 記録を保存
         saveRecordBtn.addEventListener('click', () => {
