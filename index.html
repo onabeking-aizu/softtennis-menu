@@ -32,6 +32,7 @@
         .markdown-body ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 0.75rem; }
         .markdown-body li { margin-bottom: 0.25rem; }
         .markdown-body strong { font-weight: bold; color: #15803d; }
+        .markdown-body blockquote { border-left: 4px solid #4ade80; padding-left: 1rem; color: #4b5563; background: #f0fdf4; padding-top: 0.5rem; padding-bottom: 0.5rem; border-radius: 0 0.5rem 0.5rem 0; margin-bottom: 1rem; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col">
@@ -164,26 +165,35 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">レベル</label>
                         <select id="level" class="w-full border border-gray-300 rounded-lg p-3 text-base focus:ring-2 focus:ring-green-500 focus:outline-none bg-white">
+                            <option value="導入（風船・ボール遊び等で慣れる）">導入（風船・ボール遊び等で慣れる）</option>
                             <option value="初心者（ラケットの握り方から）">初心者（ラケットの握り方から）</option>
                             <option value="初級（ラリーが少し続く）" selected>初級（ラリーが少し続く）</option>
-                            <option value="中級（試合ができる）">中級（試合ができる）</option>
-                            <option value="上級（大会上位を目指す）">上級（大会上位を目指す）</option>
+                            <option value="中級（陣形を理解し、試合ができる）">中級（陣形を理解し、試合ができる）</option>
+                            <option value="上級（大会上位、戦術的な駆け引き）">上級（大会上位、戦術的な駆け引き）</option>
                         </select>
                     </div>
-                    <!-- 人数 -->
+                    <!-- 人数（子供） -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">参加人数（子供）</label>
                         <div class="flex items-center">
-                            <input type="number" id="playerCount" value="10" min="1" max="50" class="w-full border border-gray-300 rounded-l-lg p-3 text-base focus:ring-2 focus:ring-green-500 focus:outline-none">
-                            <span class="bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg p-3 text-gray-600 text-base">人</span>
+                            <input type="number" id="playerCount" value="10" min="1" max="60" class="w-full border border-gray-300 rounded-l-lg p-3 text-base focus:ring-2 focus:ring-green-500 focus:outline-none">
+                            <span class="bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg p-3 text-gray-600 text-base min-w-[3rem] text-center">人</span>
                         </div>
                     </div>
                     <!-- 大人の人数 -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">大人の人数（コーチ・保護者）</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">大人の人数（指導者・保護者）</label>
                         <div class="flex items-center">
                             <input type="number" id="adultCount" value="2" min="0" max="20" class="w-full border border-gray-300 rounded-l-lg p-3 text-base focus:ring-2 focus:ring-green-500 focus:outline-none">
-                            <span class="bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg p-3 text-gray-600 text-base">人</span>
+                            <span class="bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg p-3 text-gray-600 text-base min-w-[3rem] text-center">人</span>
+                        </div>
+                    </div>
+                    <!-- 使用コート数 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">使用コート数</label>
+                        <div class="flex items-center">
+                            <input type="number" id="courtCount" value="1" min="1" max="10" class="w-full border border-gray-300 rounded-l-lg p-3 text-base focus:ring-2 focus:ring-green-500 focus:outline-none">
+                            <span class="bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg p-3 text-gray-600 text-base min-w-[3rem] text-center">面</span>
                         </div>
                     </div>
                     <!-- 時間 -->
@@ -191,7 +201,7 @@
                         <label class="block text-sm font-medium text-gray-700 mb-1">練習時間</label>
                         <div class="flex items-center">
                             <input type="number" id="duration" value="120" min="10" step="10" class="w-full border border-gray-300 rounded-l-lg p-3 text-base focus:ring-2 focus:ring-green-500 focus:outline-none">
-                            <span class="bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg p-3 text-gray-600 text-base">分</span>
+                            <span class="bg-gray-100 border border-l-0 border-gray-300 rounded-r-lg p-3 text-gray-600 text-base min-w-[3rem] text-center">分</span>
                         </div>
                     </div>
                     <!-- 重点課題カテゴリ -->
@@ -204,7 +214,7 @@
                     <!-- 自由記述 -->
                     <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-1">具体的なフォーカス（自由記述・任意）</label>
-                        <input type="text" id="focusDetail" placeholder="例: バックハンドの苦手克服、前衛のポジショニングなど" class="w-full border border-gray-300 rounded-lg p-3 text-base focus:ring-2 focus:ring-green-500 focus:outline-none">
+                        <input type="text" id="focusDetail" placeholder="例: バックハンドのスライス防止、雁行陣の前衛の動き、超低速素振りなど" class="w-full border border-gray-300 rounded-lg p-3 text-base focus:ring-2 focus:ring-green-500 focus:outline-none">
                     </div>
                 </div>
 
@@ -218,7 +228,7 @@
             <!-- ローディング表示 -->
             <div id="loading" class="hidden text-center py-10">
                 <i class="ph ph-spinner-gap text-4xl text-green-600 animate-spin mx-auto mb-4"></i>
-                <p class="text-gray-600 font-medium">AIがメニューを考案中...</p>
+                <p class="text-gray-600 font-medium">AIが最新の指導理論からメニューを考案中...</p>
             </div>
 
             <!-- 結果表示エリア -->
@@ -240,7 +250,7 @@
                     </div>
                     <div class="mb-4">
                         <label class="block text-sm text-gray-600 mb-1.5 font-medium">実際の内容やメモ（任意で編集・追記）</label>
-                        <textarea id="recordMemo" rows="4" class="w-full border border-gray-300 rounded-lg p-3 text-base focus:ring-2 focus:ring-green-500 focus:outline-none bg-white" placeholder="提案されたメニューのうち、実際にやったことや子供たちの様子などをメモしておきましょう。"></textarea>
+                        <textarea id="recordMemo" rows="4" class="w-full border border-gray-300 rounded-lg p-3 text-base focus:ring-2 focus:ring-green-500 focus:outline-none bg-white" placeholder="提案されたメニューのうち、実際にやったことや子供たちの様子、アレンジした点などをメモしておきましょう。"></textarea>
                     </div>
                     <button id="saveRecordBtn" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition flex items-center gap-2 w-full md:w-auto justify-center text-base">
                         <i class="ph ph-check-circle text-xl"></i> 記録を保存する
@@ -325,14 +335,15 @@
         let currentGeneratedMenuText = '';
         let records = JSON.parse(localStorage.getItem('tennis_records')) || [];
 
-        // 重点カテゴリの定義と状態
+        // 重点カテゴリの定義と状態 (最新の指導理論に基づく細分化)
         const categoryList = [
-            "総合練習（全体的な基礎力向上）",
+            "導入・ボール慣れ（風船・大ボール等）",
             "ストローク（フォア・バック）",
             "ボレー・スマッシュ（前衛練習）",
             "サーブ・レシーブ",
-            "フットワーク・体力づくり",
-            "試合形式・戦術（ペア練習）"
+            "フットワーク・コーディネーション",
+            "陣形・戦術（雁行陣など）",
+            "メンタル・試合の心構え"
         ];
         let selectedCategories = [];
 
@@ -456,6 +467,7 @@
             const level = document.getElementById('level').value;
             const playerCount = document.getElementById('playerCount').value;
             const adultCount = document.getElementById('adultCount').value;
+            const courtCount = document.getElementById('courtCount').value;
             const duration = document.getElementById('duration').value;
             
             const focusDetail = document.getElementById('focusDetail').value.trim();
@@ -474,22 +486,30 @@
             }
             const focus = focusLines.join('\n            ');
 
-            const prompt = `あなたは優秀なジュニア向け（小・中学生）ソフトテニスのコーチです。以下の条件に基づいて、今日の練習メニューを考案してください。
-            対象年齢や練習会場の環境に合わせて飽きずに楽しく、かつ効果的に上達できるような工夫を盛り込んでください。大人の人数を考慮し、球出しや指導の割り当ても提案に含めてください。体育館の場合は、ボールの弾み方の違いやスペースの制限なども考慮したメニューを提案してください。
+            // 知識に基づいたより高度なプロンプトの構築
+            const prompt = `あなたは最新の指導理論や実践的な練習法に精通した、優秀なジュニア向け（小・中学生）ソフトテニスのコーチです。
+            以下の条件に基づいて、今日の練習メニューを考案してください。
 
             【条件】
             - 練習会場: ${venue}
+            - 使用可能コート数: ${courtCount}面
             - 対象学年: ${gradeText}
             - レベル: ${level}
             - 参加人数（子供）: ${playerCount}人
-            - 大人の人数（コーチ・保護者）: ${adultCount}人
+            - 大人の人数（指導者・保護者）: ${adultCount}人
             - 練習時間: ${duration}分
-            - 重点課題・フォーカス: ${focus}
+            - 重点課題・フォーカス:
+            ${focus}
 
-            【出力形式の要件】
-            - ウォームアップ、主練習（基礎・応用）、クールダウンなどの時間配分を明記すること（合計が${duration}分になるように）。
-            - 各メニューの「目的」と「具体的なやり方・コーチの声かけのコツ」をわかりやすく記載すること。
-            - Markdown形式で見出しやリストを使って見やすく出力してください。`;
+            【メニュー考案の要件（必ず守ること）】
+            1. 時間配分: ウォームアップ、主練習（基礎・応用）、クールダウンなどの時間配分を明記し、合計が${duration}分になるようにしてください。
+            2. 待ち時間対策: 人数(${playerCount}人)とコート数(${courtCount}面)のバランスを考慮し、打つ回数を確保する工夫（多面ローテーション、球出しの役割分担、コート外での超低速素振りや8の字フットワークなどの裏メニュー）を提案に含めてください。
+            3. 発達段階とレベルへの配慮: 
+               - 対象に低学年や「導入」レベルが含まれる場合は、風船や大きいボール、スカーフ等を使ったボール慣れや、コーディネーション（運動神経）ドリルを盛り込んでください。
+               - 中級以上には、リズム・タイミングの取り方（スプリットステップ、片足立ちでのタメなど）や、実戦的な陣形（雁行陣など）を意識した要素を含めてください。
+               - 体育館の場合は、バウンドの違いやスペース制限を考慮してください。
+            4. 具体的な指導: 各メニューの「目的」と「具体的なやり方・コーチの声かけのコツ（例：ポーカーフェイスの意識、面をフラットに等）」をわかりやすく記載してください。
+            5. 出力形式: Markdown形式で見出しやリスト、引用ブロック(>)などを使って見やすく出力してください。`;
 
             // UI更新
             generateBtn.disabled = true;
@@ -499,9 +519,6 @@
             saveSuccessMsg.classList.add('hidden');
 
             // 試行するモデルのリスト
-            // 1. プレビュー環境専用モデル (Canvas用)
-            // 2. 一般公開されている最新モデル (GitHub等で個人のAPIキーを使う用)
-            // 3. 一般公開されている安定モデル
             const modelsToTry = [
                 'gemini-2.5-flash-preview-09-2025',
                 'gemini-2.5-flash',
@@ -519,7 +536,6 @@
             while (retryCount <= maxRetries && !success) {
                 let isModelNotFoundError = false;
 
-                // モデルを順番に試すフォールバック処理
                 for (let model of modelsToTry) {
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
                     
@@ -536,14 +552,12 @@
                             })
                         });
 
-                        // 404エラーの場合は、その環境でモデルが使えないだけなので、次のモデルを試す
                         if (response.status === 404) {
                             lastErrorMsg = `モデル未発見(404): ${model}`;
                             isModelNotFoundError = true;
                             continue; 
                         }
 
-                        // 400エラー(APIキー無効など)の場合は、致命的なのでリトライループを抜ける判定用に記録
                         if (response.status === 400 && !apiKey) {
                              throw new Error('APIキーが設定されていないか、無効です。設定画面から正しいAPIキーを入力してください。');
                         }
@@ -566,12 +580,12 @@
                             
                             // 記録用メモエリアにテキストを初期セット
                             const themeText = (selectedCategories.length > 0 ? selectedCategories.join('、') : '指定なし') + (focusDetail ? `\n（${focusDetail}）` : '');
-                            recordMemo.value = "【本日のテーマ】\n" + themeText + "\n\n【実施メモ・所感】\n";
+                            recordMemo.value = "【本日のテーマ】\n" + themeText + "\n\n【実施メモ・所感・アレンジした点など】\n";
                             
                             loading.classList.add('hidden');
                             resultArea.classList.remove('hidden');
                             success = true;
-                            break; // 成功したのでモデル探索ループを抜ける
+                            break; 
                         } else {
                             throw new Error('予期せぬAPIレスポンス形式です。');
                         }
@@ -579,19 +593,17 @@
                     } catch (error) {
                         lastErrorMsg = error.message;
                         isModelNotFoundError = false;
-                        break; // 通信エラー等の場合は、この回のリトライを終了して次のdelayへ
+                        break; 
                     }
                 }
 
-                if (success) break; // 完全に成功したらリトライループも抜ける
+                if (success) break; 
 
-                // 404エラーで全モデルを試し終わった場合は、待機しても無駄なので終了
                 if (isModelNotFoundError && !success) {
                     lastErrorMsg = '利用可能なAIモデルが見つかりませんでした。APIキーの権限をご確認ください。';
                     break;
                 }
                 
-                // APIキー自体のエラーの場合はリトライしない
                 if (lastErrorMsg.includes('APIキーが設定されていない')) {
                     break;
                 }
@@ -642,6 +654,7 @@
                 level: document.getElementById('level').value,
                 playerCount: document.getElementById('playerCount').value,
                 adultCount: document.getElementById('adultCount').value,
+                courtCount: document.getElementById('courtCount').value,
                 duration: document.getElementById('duration').value,
                 focus: focusText
             };
@@ -650,8 +663,8 @@
                 id: Date.now().toString(),
                 date: dateStr,
                 conditions: conditions,
-                menuContent: currentGeneratedMenuText, // AIが提案したMarkdownテキスト
-                memo: recordMemo.value // ユーザーが追記したメモ
+                menuContent: currentGeneratedMenuText, 
+                memo: recordMemo.value 
             };
 
             // 配列の先頭に追加
@@ -680,22 +693,21 @@
                 const recordEl = document.createElement('div');
                 recordEl.className = 'bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden mb-4';
                 
-                // ヘッダー部分（クリックで開閉）
+                // ヘッダー部分
                 const headerEl = document.createElement('div');
                 headerEl.className = 'bg-gray-50 p-4 flex justify-between items-center cursor-pointer hover:bg-gray-100 transition';
                 
-                // 日付のフォーマット
                 const dateObj = new Date(record.date);
                 const dateDisplay = `${dateObj.getFullYear()}年${dateObj.getMonth() + 1}月${dateObj.getDate()}日`;
                 
-                // 過去の記録との互換性のため大人の人数をチェック
                 const adultDisplay = record.conditions.adultCount ? ` / 大人${record.conditions.adultCount}人` : '';
+                const courtDisplay = record.conditions.courtCount ? ` / ${record.conditions.courtCount}面` : '';
 
                 headerEl.innerHTML = `
                     <div class="flex flex-col md:flex-row md:items-center gap-2 md:gap-4">
                         <span class="font-bold text-gray-800 text-lg"><i class="ph ph-calendar text-blue-500 mr-1"></i>${dateDisplay}</span>
-                        <span class="text-sm text-gray-600 bg-white px-2 py-1 rounded border border-gray-200">${record.conditions.duration}分 / 子供${record.conditions.playerCount}人${adultDisplay}</span>
-                        <span class="text-sm text-green-700 font-medium truncate max-w-[200px]">テーマ: ${record.conditions.focus}</span>
+                        <span class="text-sm text-gray-600 bg-white px-2 py-1 rounded border border-gray-200">${record.conditions.duration}分 / 子供${record.conditions.playerCount}人${adultDisplay}${courtDisplay}</span>
+                        <span class="text-sm text-green-700 font-medium truncate max-w-[200px] md:max-w-[300px]">テーマ: ${record.conditions.focus}</span>
                     </div>
                     <div class="flex items-center gap-3">
                         <button class="delete-btn text-red-500 hover:bg-red-50 p-1.5 rounded transition" data-id="${record.id}" title="削除">
@@ -709,7 +721,6 @@
                 const contentEl = document.createElement('div');
                 contentEl.className = 'p-5 border-t border-gray-200 hidden bg-white';
                 
-                // メモがある場合
                 const memoHtml = record.memo.trim() ? `
                     <div class="mb-4 bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded-r">
                         <h4 class="text-sm font-bold text-yellow-800 mb-1">コーチメモ</h4>
@@ -731,7 +742,6 @@
 
                 // 開閉イベント
                 headerEl.addEventListener('click', (e) => {
-                    // 削除ボタンクリック時は開閉しない
                     if(e.target.closest('.delete-btn')) return;
                     
                     const isHidden = contentEl.classList.contains('hidden');
@@ -749,7 +759,7 @@
                 // 削除イベント
                 const deleteBtn = headerEl.querySelector('.delete-btn');
                 deleteBtn.addEventListener('click', (e) => {
-                    e.stopPropagation(); // イベント伝播停止
+                    e.stopPropagation();
                     showConfirm('この記録を削除してもよろしいですか？', () => {
                         deleteRecord(record.id);
                     });
