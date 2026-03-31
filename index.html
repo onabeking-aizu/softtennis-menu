@@ -238,6 +238,9 @@
             <div id="resultArea" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 p-5 md:p-6 mb-6">
                 <div class="flex justify-between items-center mb-4 border-b pb-2">
                     <h2 class="text-lg font-bold text-gray-800"><i class="ph ph-clipboard-text text-green-600 mr-2"></i>提案されたメニュー</h2>
+                    <button id="printMenuBtn" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-1.5 px-4 rounded-lg transition flex items-center gap-2 text-sm border border-gray-300" title="A4サイズで印刷">
+                        <i class="ph ph-printer text-lg"></i> 印刷
+                    </button>
                 </div>
                 
                 <div id="menuOutput" class="markdown-body bg-green-50/50 p-4 rounded-lg border border-green-100 mb-6 min-h-[200px]">
@@ -371,6 +374,7 @@
         const loading = document.getElementById('loading');
         const resultArea = document.getElementById('resultArea');
         const menuOutput = document.getElementById('menuOutput');
+        const printMenuBtn = document.getElementById('printMenuBtn');
         
         const recordDate = document.getElementById('recordDate');
         const recordMemo = document.getElementById('recordMemo');
@@ -680,6 +684,94 @@
                 generateBtn.disabled = false;
                 generateBtn.classList.remove('opacity-50');
             }
+        });
+
+        // メニューの印刷機能（別ウィンドウできれいにA4印刷）
+        printMenuBtn.addEventListener('click', () => {
+            const menuHtml = menuOutput.innerHTML;
+            
+            // 記録用メモからテーマを抽出（デフォルト値も設定）
+            const memoText = document.getElementById('recordMemo').value;
+            const lines = memoText.split('\n');
+            let theme = '本日の練習メニュー';
+            if (lines.length > 1 && lines[1].trim() !== '') {
+                theme = lines[1].replace('【本日のテーマ】', '').trim();
+            }
+
+            // 新しいウィンドウを開いて印刷用のHTMLを構築
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html lang="ja">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>練習メニュー印刷</title>
+                    <style>
+                        @page { size: A4 portrait; margin: 20mm; }
+                        body { 
+                            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif; 
+                            color: #333; 
+                            line-height: 1.6; 
+                        }
+                        .print-header { 
+                            border-bottom: 2px solid #166534; 
+                            padding-bottom: 10px; 
+                            margin-bottom: 20px; 
+                            display: flex; 
+                            justify-content: space-between; 
+                            align-items: baseline; 
+                        }
+                        .print-header h1 { margin: 0; color: #166534; font-size: 24px; }
+                        .print-header .date { color: #666; font-size: 14px; }
+                        .theme-box {
+                            background-color: #f3f4f6;
+                            padding: 10px 15px;
+                            border-radius: 6px;
+                            margin-bottom: 20px;
+                            font-weight: bold;
+                            color: #4b5563;
+                        }
+                        /* 印刷用のMarkdownデザイン */
+                        h3 { font-size: 18px; font-weight: bold; margin-top: 24px; margin-bottom: 12px; color: #166534; border-left: 4px solid #166534; padding-left: 10px; }
+                        h4 { font-size: 16px; font-weight: bold; margin-top: 16px; margin-bottom: 8px; }
+                        p { margin-bottom: 12px; }
+                        ul, ol { padding-left: 24px; margin-bottom: 16px; }
+                        li { margin-bottom: 6px; }
+                        strong { color: #15803d; }
+                        blockquote { border-left: 4px solid #4ade80; padding: 10px 15px; color: #4b5563; background: #f0fdf4; margin: 0 0 16px 0; border-radius: 0 8px 8px 0;}
+                        
+                        @media print {
+                            .no-print { display: none !important; }
+                        }
+                        .print-btn-container { text-align: center; margin-top: 20px; margin-bottom: 30px; }
+                        .print-btn { background-color: #166534; color: white; padding: 12px 30px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+                        .print-btn:hover { background-color: #14532d; }
+                    </style>
+                </head>
+                <body>
+                    <div class="no-print print-btn-container">
+                        <button class="print-btn" onclick="window.print()">🖨️ A4サイズで印刷する</button>
+                    </div>
+                    <div class="print-header">
+                        <h1>ソフトテニス練習メニュー</h1>
+                        <div class="date">作成日: ${new Date().toLocaleDateString('ja-JP')}</div>
+                    </div>
+                    <div class="theme-box">
+                        ターゲット・テーマ: ${theme}
+                    </div>
+                    <div class="content">
+                        ${menuHtml}
+                    </div>
+                    <script>
+                        // 画面読み込み完了時に自動で印刷ダイアログを開く
+                        window.onload = function() {
+                            setTimeout(() => { window.print(); }, 500);
+                        };
+                    </` + `script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
         });
 
         // ② お悩み相談 API 呼び出し
